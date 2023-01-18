@@ -8,18 +8,17 @@ $mysqli = mysqli_connect($host, $user, $password, $database);
 if (mysqli_connect_errno()) {
     echo "Не удалось подключиться к MySQL: " . mysqli_connect_error();
 }
-$query = "SELECT * FROM orders";
-$res = mysqli_query($mysqli, $query);
-if (!$res) die (mysqli_error($mysqli));
 
-while ($row = mysqli_fetch_assoc($res)) {
-    ?>
-    <p>
-    <h2><?= $row['order_id']; ?></h2>
-    Film: <?= $row['film_id']; ?><br>
-    Cinema: <?= $row['cinema_id']; ?><br>
-    </p>
-    <?php
+if(!empty($_GET['del'])&&!empty((int)$_GET['id'])){
+    $id = (int)$_GET['id'];
+    $query = "DELETE FROM cinema WHERE id=$id";
+    $res = mysqli_query($mysqli, $query);
+
+    if($res) die(mysqli_error($mysqli));
+
+    if(mysqli_affected_rows($mysqli == 1)){
+
+    }
 }
 
 $query = "SELECT * FROM cinema";
