@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  #Image for apache, php, node
+  web:
+    build:
+      context: ./images/web
+      args:
+        SSH_PASS: ${USER_PASSWORD:-password}
+        SSH_USER: ${USER_LOGIN:-login}
+        LARAVEL: ${LARAVEL:-false}
+        YII: ${YII:-false}
+        VUE: ${VUE:-false}
+        REACT: ${REACT:-false}
+        ANGULAR: ${ANGULAR:-false}
+    environment:
+      - APACHE_RUN_USER=${USER_LOGIN:-login}
+      - APACHE_RUN_GROUP=${USER_LOGIN:-login}
+      - LC_CDPATH=/var/www/html
+    restart: always
+    container_name: ${USER_LOGIN:-login}_web
+    volumes:
+      - ./data/html:/var/www/html
+      - ./images/web/start.sh:/root/start.sh
+      - ./images/web/sshd_config:/etc/ssh/sshd_config
+    ports:
+      - ${SSH_PORT:-22}:22
+    networks:
+      - apache-php-mysql-node-network
+
+  #Image for mariadb  
+  mariadb:
+    image: mariadb:10.7
+    restart: unless-stopped
+    environment: 
+      MYSQL_DATABASE: ${DB_NAME:-db}
+      MYSQL_ROOT_PASSWORD: ${USER_DB_PASSWORD:-password}
+      MYSQL_USER: ${USER_LOGIN:-login}
+      MYSQL_PASSWORD: ${USER_PASSWORD:-password}
+    container_name: ${USER_LOGIN:-login}_mariadb
+    networks:
+      - apache-php-mysql-node-network
+
+  #Image for phpmyadmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    container_name: ${USER_LOGIN:-login}_phpmyadmin
+    environment:
+      - PMA_HOST=mariadb
+      - PMA_ABSOLUTE_URI=http://localhost:8080/phpmyadmin
+    depends_on:
+      - mariadb
+    networks:
+      - apache-php-mysql-node-network
+
+  #Image for proxy server
+  proxy:
+    build:
+      context: ./images/proxy
+      args:
+        SERVER_NAME: ${SERVER_NAME:-localhost}
+        WEB_PORT: ${WEB_PORT:-8080}
+    container_name: ${USER_LOGIN:-login}_proxy
+    restart: unless-stopped
+    ports:
+      - ${WEB_PORT:-8080}:80
+    depends_on:
+      - web
+      - phpmyadmin
+    networks:
+      - apache-php-mysql-node-network
+
+networks:
+  apache-php-mysql-node-network:
+    driver: bridge
